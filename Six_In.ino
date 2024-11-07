@@ -62,6 +62,8 @@ volatile bool Setting = false;
 volatile bool Fault = true;
 volatile bool ValueFault = false;
 
+volatile bool TimeOut = false;
+
 uint8_t pwmValue = 0;
 uint8_t pwmValueAnt = 0;
 uint16_t valueADC = 0;
@@ -71,16 +73,19 @@ float voltage = 0.0;
 int numbers[] = {1, 2, 3, 4, 5, 6};
 int currentSelection = 5; // Indice del numero selezionato
 
-// Definir el array de 14 valores uint8_t
-uint8_t ValueRecupery[14] = {};
-// Indirizzo iniziale nella EEPROM dove verranno salvati i dati
-const int direzioneIniziale = 0;
+// Definire l'array di 14 valori uint8_t
+byte ValueRecupery[14] = {};
 
 const int NUM_SAMPLES = 5;  // Numero di campionamento
 int samples[NUM_SAMPLES];
 
 const unsigned long SHORT_INTERVAL = 50;  // Intervallo corto in ms
 const unsigned long LONG_INTERVAL = 80;   // Intervallo lungo in ms
+
+// Costante per il tempo di inattività massimo
+const unsigned long maximunDowntime = 10000;
+unsigned long lastActionTime = 0; // Memorizza il tempo in millisecondi
+                                  // dell'ultima volta che è stato premuto un pulsante
 
 Adafruit_SSD1306 disp(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); // I2C: A4->SDA, A5->SCL
 
@@ -90,7 +95,26 @@ Button2 keyUp;
 // Variabili per gestire tempi di pressione prolungati
 const unsigned long LONG_PRESS_TIME = 2000;
 
+// Scrivere l'array nella EEPROM
+void ScrivoArray(byte *array, int size) {
+  for (int i = 0; i < size; i++) {
+    EEPROM.write(i, array[i]);
+    delay(5);
+  }
+}
+
+// Leggere l'array dalla EEPROM
+void LeggoArray(byte *array, int size) {
+  for (int i = 0; i < size; i++) {
+    array[i] = EEPROM.read(i);
+  }
+}
+
 void singleClick1(Button2& btn) {
+  if (TimeOut) {
+    // Reimposta il tempo in millisecondi dell'ultima azione quando si accede alla subroutine
+    lastActionTime = millis();
+  }
   if (Normal) {
     if (Setting) {
       if (pwmValue >= 1 && pwmValue <= ValueRecupery[1]) {
@@ -118,7 +142,11 @@ void singleClick1(Button2& btn) {
   }
 }  
 
-void singleClick2(Button2& btn) {
+void singleClick2(Button2& btn) {   
+  if (TimeOut) {
+    // Reimposta il tempo in millisecondi dell'ultima azione quando si accede alla subroutine
+    lastActionTime = millis();
+  }
   if (Normal) {
     if (Setting) {
       if (pwmValue >= 0 && pwmValue <= ValueRecupery[1]-1) {
@@ -133,7 +161,7 @@ void singleClick2(Button2& btn) {
         ValueRecupery[8] = ++pwmValue;
       } else if (pwmValue >= ValueRecupery[9]+1 && pwmValue <= ValueRecupery[11]-1) {
         ValueRecupery[10] = ++pwmValue;
-      } else if (pwmValue >= ValueRecupery[11]+1 && pwmValue <= 255) {
+      } else if (pwmValue >= ValueRecupery[11]+1 && pwmValue <= 254) {
         ValueRecupery[12] = ++pwmValue;
       }
       analogWrite(OUT_PWM, pwmValue);  // Invia pwmValue all'uscita del PWM
@@ -147,11 +175,11 @@ void singleClick2(Button2& btn) {
 }
 
 // Calcolo della frammentazione dei valori PWM
-void fragment(int n, byte *arr) {
+void fragment(byte n, byte *arr) {
   // Calcoliamo la nuova dimensione segmentata
-  int segment = 2 * n;
+  byte segment = 2 * n;
   // Calcola l'incremento per suddividere l'intervallo utilizzando numeri interi
-  int increment = 255 / segment; // Divisione intera troncata
+  byte increment = 255 / segment; // Divisione intera troncata
   // Riempi l'array con i valori suddivisi in blocchi utilizzando il troncamento
   for (int i = 0; i <= segment; i++) {
     arr[i] = i * increment; // Qui viene eseguita la moltiplicazione dei numeri interi
@@ -165,23 +193,7 @@ void fragment(int n, byte *arr) {
   // L'ultimo elemento dell'array e la quantita di pin che si decidera adoperare
   arr[13] = n;
 
-  ScrivoArray(ValueRecupery);
-}
-
-// Leggere l'array dalla EEPROM
-void LeggoArray(byte *array) {
-  int max = sizeof(array) / sizeof(array[0]);
-  for (int i = 0; i < max; i++) {
-    array[i] = EEPROM.read(direzioneIniziale + i);
-  }
-}
-
-// Scrivere l'array nella EEPROM
-void ScrivoArray(byte *array) {
-  int max = sizeof(array) / sizeof(array[0]);
-  for (int i = 0; i < max; i++) {
-    EEPROM.write(direzioneIniziale + i, array[i]);
-  }
+  ScrivoArray(ValueRecupery, sizeof(ValueRecupery));
 }
 
 /*
@@ -192,10 +204,13 @@ i nuovi valori nell'array ValueRecupery[].
 */
 
 void longClick1(Button2& btn) {
+  TimeOut = true;
   if (Normal) {
     Setting = !Setting;
     if(!Setting) {
-      ScrivoArray(ValueRecupery);      
+      ScrivoArray(ValueRecupery, sizeof(ValueRecupery));
+      TimeOut = false;
+      lastActionTime = 0;
     }
   } else {
     switch(numbers[currentSelection]) {
@@ -225,13 +240,16 @@ void longClick1(Button2& btn) {
      
       default: break;                            
     }
-    LeggoArray(ValueRecupery);
+    LeggoArray(ValueRecupery, sizeof(ValueRecupery));
     Initial = true;
-    Normal = true;    
+    Normal = true;
+    TimeOut = false;
+    lastActionTime = 0;
   }
 }
 
 void longClick2(Button2& btn) {
+  TimeOut = true;
   Normal = false;
 }
 
@@ -241,7 +259,16 @@ ISR(PCINT0_vect) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  
+  //Serial.begin(9600);
+
+  LeggoArray(ValueRecupery, sizeof(ValueRecupery)); 
+
+  if (ValueRecupery[13] < 1 || ValueRecupery[13] > 6) {
+    //  Controlla se sono stati trovati dati
+    //  Se non sono stati trovati dati, utilizzare i valori predefiniti e salva l'array  
+    fragment(6, ValueRecupery); // valore di default
+  }
 
   // Inizializza i pin come ingressi 8 a 13 è KEY_DOWN, KEY_UP
   for (int i = 0; i < numPinsFault; i++) {
@@ -260,23 +287,7 @@ void setup() {
   //  Abilita gli interrupt globali
   sei();
 
-  pinMode(IN_ADC, INPUT);  
- 
-  LeggoArray(ValueRecupery);
-
-  #ifdef DEBUG_ON
-  // Stampa l'array ottenuto
-  Serial.print("Array ottenuto: ");
-  for (int i = 0; i < 14; i++) {
-    Serial.print(ValueRecupery[i]);
-    Serial.print(" ");
-  }
-  #endif
-
-  if (ValueRecupery[13] < 1 || ValueRecupery[13] > 6) {  //  Controlla se sono stati trovati dati
-    //  Se non sono stati trovati dati, utilizzare i valori predefiniti e salva l'array
-    fragment(6, ValueRecupery); // valore di default   
-  }
+  pinMode(IN_ADC, INPUT);
 
   keyDown.begin(KEY_DOWN);  // Inizializzare i pulsanti.
   keyUp.begin(KEY_UP);
@@ -340,8 +351,29 @@ void loop() {
     }
     sum = 0;
     Fault = false;
-  }  
-    
+  }
+
+  /*
+  Calcola il tempo trascorso dall'ultima volta 
+  che è stato premuto un pulsante e se supera il massimo, 
+  torna alla modalità NORMAL MODE, 
+  salvando solo le ultime impostazioni effettuate, 
+  senza intervenire sul numero di pin selezionati come ingressi.  
+  */
+  if (TimeOut) {
+    unsigned long currentTime = millis();
+    if (lastActionTime == 0) {
+      lastActionTime = currentTime;
+    }
+    if (currentTime - lastActionTime > maximunDowntime) {
+    ScrivoArray(ValueRecupery, sizeof(ValueRecupery));
+    TimeOut = false;
+    lastActionTime = 0;
+    Normal = true;
+    Setting = false;
+    }
+  }
+  
   unsigned long currentMillis = millis();
   static unsigned long previousMillis = 0;
 
@@ -388,16 +420,17 @@ void loop() {
   voltage = ((float)valueADC / 1023.0) * Vref;  //  Convertire in tensione
  
   disp.setTextSize(1);               
-  disp.setTextColor(WHITE, BLACK);
+  disp.setTextColor(SSD1306_WHITE);
   disp.clearDisplay();
   disp.setCursor(0, 0);
   if (Normal) {
     if (Setting) {
-      disp.println("SETTING MODE:");  
+      disp.println("SETTING MODE");  
     } else {
-      disp.println("NORMAL MODE:");
-    } 
-    disp.println();
+      disp.println("NORMAL MODE");
+      disp.print("Input ");
+      disp.println(ValueRecupery[13]);
+    }
     disp.println("PWM to Volts -->");
     disp.setCursor(0, 29);
     disp.setTextSize(2);
@@ -406,7 +439,7 @@ void loop() {
     disp.setTextSize(1); 
     disp.println();
     disp.print("pwmValue = ");
-    disp.println(pwmValue); 
+    disp.println(pwmValue);     
     disp.display();
   } else {
     disp.setCursor(0, 0);
@@ -425,7 +458,7 @@ void loop() {
     disp.print("^");
     disp.println();
     disp.println();
-    disp.println("Up/Down for select");     
+    disp.println("Up/Down for select");  
     disp.display();   
   }
 }
