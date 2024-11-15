@@ -52,7 +52,7 @@ const int INPUT_4 = 11;
 const int INPUT_5 = 12;
 const int INPUT_6 = 13;
 const int inputPins[] = {INPUT_1, INPUT_2, INPUT_3, INPUT_4, INPUT_5, INPUT_6, KEY_DOWN, KEY_UP};
-const int numPinsFault = sizeof(inputPins) / sizeof(inputPins[0]);
+const int Control_In = sizeof(inputPins) / sizeof(inputPins[0]);
 
 const float Vref = 5.0;  // Riferimento di tensione (5V per Arduino Uno)
 
@@ -83,10 +83,11 @@ const unsigned long SHORT_INTERVAL = 50;  // Intervallo corto in ms
 const unsigned long LONG_INTERVAL = 80;   // Intervallo lungo in ms
 
 // Costante per il tempo di inattività massimo
-const unsigned long maximunDowntime = 10000;
-unsigned long lastActionTime = 0; // Memorizza il tempo in millisecondi
-                                  // dell'ultima volta che è stato premuto un pulsante
-
+const unsigned long maximunDowntime = 60000;
+// Memorizza il tempo in millisecondi
+// dell'ultima volta che è stato premuto un pulsante
+unsigned long lastActionTime = 0;
+                                 
 Adafruit_SSD1306 disp(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET); // I2C: A4->SDA, A5->SCL
 
 // Creiamo istanze Button2 per ciascun pulsante
@@ -271,7 +272,7 @@ void setup() {
   }
 
   // Inizializza i pin come ingressi 8 a 13 è KEY_DOWN, KEY_UP
-  for (int i = 0; i < numPinsFault; i++) {
+  for (int i = 0; i < Control_In; i++) {
     pinMode(inputPins[i], INPUT_PULLUP);
   }
   
@@ -322,7 +323,7 @@ void loop() {
 
   if(Fault) {
     pwmValueAnt = pwmValue;
-    for (int i = 0; i < numPinsFault; i++) {
+    for (int i = 0; i < Control_In; i++) {
       delay(100);
       // Fare la somma dei pin che sono a livello basso
       if (digitalRead(inputPins[i]) == LOW) {
