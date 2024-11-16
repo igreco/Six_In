@@ -18,28 +18,32 @@ Questa è una versione minimizzata di Six_In_Out (vedere progetto Six_In_Out), m
 
 Il test sarà fatto con un kit Arduino Uno Rev.3, un display SSD1306 tipo OLED, 2 pulsanti (N.A.), un filtro passa basso attivo fatto con condensatori e resistenze varie e un amplificatore operazionale, cavi di interconnessione, ecc. (vedere circuito Six_In.pdf)(vedere NOTA BENE).
 
-Gli ingressi digitali sono normali a livello alto e attivi a livello basso, considerati in FAULT.
+Il programma permette di settare la quantità degli ingressi digitali di controllo: da uno (minimo) a sei (massimo), chiamati Control_In.
+
+I Control_In sono normali a livello alto e attivi a livello basso.
 
 Nel caso di tutti gli ingressi a livello alto, 
 la tensione in uscita sarà minima, ovvero 0,0 Volt (GND).
 
-Nel caso di tutti gli ingressi a livello basso (tutti gli ingressi in FAULT), 
-la tensione in uscita sarà massima, ovvero 5.0 Volt (VCC).
+Nel caso di tutti i Control_In a livello basso, 
+la tensione in uscita sarà massima, ovvero 5 Volt (VCC).
 
-In base al numero di voci in FAULT la tensione in uscita viene generata come segue: 
+Una volta programmato, il micro parte con un settaggio di sei ingressi di controllo (sei Control_In), che è il modo per default, dopo vedremmo come vanno cambiati.
 
-| **Ingressi in FAULT** | **Tensione di uscita generata** |
-|:---------------------:|---------------------------------|
-|        **_0_**        | 0,0 Volt (GND).                 |
-|        **_1_**        | 1/6 VCC                         |
-|        **_2_**        | 2/6 VCC (1/3).                  |
-|        **_3_**        | 3/6 VCC (1/2).                  |
-|        **_4_**        | 4/6 VCC (2/3).                  |
-|        **_5_**        | 5/6 VCC.                        |
-|        **_6_**        | 5,0 Volts (VCC).                |
+La seguente tabella in basso mostra come è generata la tensione in uscita in riferimento a la quantità di Control_In attivi.
 
-I valori di tensione generati possono essere variati in più o in meno 
-tramite due pulsanti identificati come UP e DOWN (una sorta di trimmer digitale di regolazione fine).
+| Control_In | Tensione di uscita nominale generata |
+|:-----------------:|-----------------------------|
+| NESSUNO            | 0,0 Volt (GND).             |
+| UNO                 | 1/6 VCC                     |
+| DUE                 | 1/3 VCC (2/6).              |
+| TRE                 | 1/2 VCC (3/6).              |
+| QUATRO                 | 2/3 VCC (4/6).              |
+| CINQUE                 | 5/6 VCC.                    |
+| SEI                 | VCC (5 Volt).            |
+
+La tensione di uscita generata può essere variata in più o in meno 
+tramite due pulsanti identificati come UP e DOWN, una sorta di trimmer digitale di regolazione.
 
 Il display mostra lo stato in cui si trova l'Atemega328P, che può essere:
 NORMAL MODE o SETTING MODE.
@@ -49,49 +53,47 @@ I pulsanti non generano alcuna azione apparente.
 
 Per passare allo stato SETTING MODE è necessario tenere premuto il pulsante DOWN per due secondi.
 Nello stato SETTING MODE, i pulsanti svolgono le loro funzioni, 
-potendo regolare verso l'alto o verso il basso la tensione di controllo dell'uscita e visualizzarla sul display SSD1306.
-
-Generando i FAULT (un ingresso in FAULT, due ingressi in FAULT, tre... ecc.), è possibile effettuare una regolazione fine della tensione di controllo necessaria per ogni tipo di FAULT.
+potendo regolare verso l'alto o verso il basso la tensione di controllo dell'uscita e visualizzarla sul display SSD1306. 
+Mettendo a massa ogni Control_In necessari si vedrà sul display la tensione nominale generata e si potrà agire come detto prima, andando a scatti ogni volta che si pigia i pulsanti.
 
 Una volta completate le correzioni, premendo nuovamente il pulsante DOWN per due secondi, l' Atemega328P uscirà dallo stato SETTING MODE e si porterà a lo stato NORMAL MODE, facendo sì che tutte le impostazioni effettuate vengano memorizzate nella memoria EEPROM, in questo modo le impostazioni rimarranno permanenti anche se VCC è disconnesso.
 
-Per ritornare ai valori iniziali (0, 1/6, 2/6, ecc.) o DEFAULT procedere come segue:
-Dallo stato NORMAL MODE premere per due secondi, questa volta però, il tasto UP, 
+Da far notare che nello stato SETTING MODE, si dalla ultima volta che si ha pigiato su un pulsante passa 60 secondi senza aver fatto il passaggio a lo stato NORMAL MODE tenendo premuto nuovamente il pulsante DOWN per due secondi, il ESP32 torna in automatico a lo stato NORMAL MODE facendo sì che tutte le impostazioni effettuate fino questo instante vengano memorizzate nella memoria non volatile (EEPROM), in questo modo le impostazioni fatte non si perdono e si potrà riprendere quelle mancanti in futuro.
+
+Se invece dallo stato NORMAL MODE si preme per due secondi, questa volta però, il tasto UP, 
 il display cambia e mostrerà ora una riga con i valori da 1 a 6 e sotto di essi 
-un cursore che si sposterà con i due tasti (con DOWN verso sinistra e UP verso la destra del display), posizionando il cursore sotto 6 ed uscendo dallo stato SETTING MODE con il tasto DOWN, tenendolo premuto per due secondi, le impostazioni dei valori della tensione di uscita torneranno a quelle di la tabella dei valori iniziali precedente.
+un cursore che si sposterà con i due tasti (con DOWN verso sinistra e UP verso la destra del display), posizionando il cursore sotto la quantità che si vuole di Control_In ed uscendo dallo stato SETTING MODE con il tasto DOWN, tenendolo premuto per due secondi, le impostazioni della quantità dei Control_In cambierà a la scelta fatta e i valori della tensione di uscita sarà come indicati nella prossima tabella.
+Nuovamente se, sin dalla ultima volta che si ha pigiato su un pulsante passa 60 secondi senza aver fatto il passaggio a lo stato NORMAL MODE tenendo premuto nuovamente il pulsante DOWN per due secondi, il Atemega328P torna in automatico a lo stato NORMAL MODE, questa volta pero non cambierà la scelta della quantità di Control_In, sarà compito del utente a farlo solo pigiando per due secondi il pulsante DOWN, il resto rimane invariato. Cosi è possibile scegliere il numero di input necessari da 1 a 6.
 
-Come si può vedere intuitivamente, è possibile scegliere il numero di input necessari da 1 a 6.
+Gli ingressi non necessari verranno scartati dal circuito rimuovendo i ponticelli su di essi (vedere circuito Six_In.pdf). Se invece si decide di restare i ponticelli il comportamento sarà sulla quantità di Control_In attivi sul totale, per controllare la tensione di uscita. 
+Ad esempio: scegliendo 3 Control_In come quantità e mantenendo tutti 6 ponticelli, qualunque de i sei ingressi sarà visto per il programma come attivo e facendo si che il valore di tensione varie accordo a la massima quantità di tre, finché non scenda a due o uno la uscita si fermerà al valore di tensione corrispondente a tre. 
 
-Gli ingressi non necessari saranno scartati dal circuito rimuovendo i relativi ponticelli (vedere circuito Six_In.pdf).
+I valori della tensione di uscita nominali saranno secondo la seguente tabella:
 
-I valori iniziali della tensione di uscita saranno secondo la seguente tabella:
-
-| **VALORI INIZIALI** | _**NESSUN FAULT**_ | _**1 FAULT**_ | _**2 FAULT**_ | _**3 FAULT**_ | _**4 FAULT**_ | _**5 FAULT**_ | _**6 FAULT**_ |
+| **Control_In Attivi -->** | **_NESSUNO_** | **_UNO_** | **_DUE_** | **_TRE_** | **_QUATTRO_** | **_CINQUE_** | **_SEI_** |
 |:-------------------:|:------------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|:-------------:|
-|   **_x 6 input_**   |    _**0 Volt**_    | _**1/6 VCC**_ | _**1/3 VCC**_ | _**1/2 VCC**_ | _**2/3 VCC**_ | _**5/6 VCC**_ |   _**VCC**_   |
-|   **_x 5 input_**   |    _**0 Volt**_    | _**1/5 VCC**_ | _**2/5 VCC**_ | _**3/5 VCC**_ | _**4/5 VCC**_ |   _**VCC**_   |   _**VCC**_   |
-|   **_x 4 input_**   |    _**0 Volt**_    | _**1/4 VCC**_ | _**1/2 VCC**_ | _**3/4 VCC**_ |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |
-|   **_x 3 input_**   |    _**0 Volt**_    | _**1/3 VCC**_ | _**2/3 VCC**_ |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |
-|   **_x 2 input_**   |    _**0 Volt**_    | _**1/2 VCC**_ |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |
-|   **_x 1 input_**   |    _**0 Volt**_    |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |   _**VCC**_   |
+|    **x 6 input**    |      _0 Volt_      |   _1/6 VCC_   |   _1/3 VCC_   |   _1/2 VCC_   |   _2/3 VCC_   |   _5/6 VCC_   |     _VCC_     |
+|    **x 5 input**    |      _0 Volt_      |   _1/5 VCC_   |   _2/5 VCC_   |   _3/5 VCC_   |   _4/5 VCC_   |     _VCC_     |     _VCC_     |
+|    **x 4 input**    |      _0 Volt_      |   _1/4 VCC_   |   _1/2 VCC_   |   _3/4 VCC_   |     _VCC_     |     _VCC_     |     _VCC_     |
+|    **x 3 input**    |      _0 Volt_      |   _1/3 VCC_   |   _2/3 VCC_   |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |
+|    **x 2 input**    |      _0 Volt_      |   _1/2 VCC_   |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |
+|    **x 1 input**    |      _0 Volt_      |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |     _VCC_     |
 
-Cioè, le tensioni di uscita vengono trattate in base al numero di pin di ingresso scelti e in base al numero di ingressi che sono in FAULT.
+Cioè, le tensioni di uscita vengono trattate in base al numero di Control_In di ingresso scelti e in base al numero di Control_In attivi.
 
-Il numero di pin in questione così come le loro impostazioni una volta memorizzati nella memoria non volatile 
-rimangono permanenti finché non viene effettuata una nuova modifica con i due pulsanti e memorizzati nuovamente.
+Il numero Control_In in questione così come le loro impostazioni una volta memorizzati nella memoria non volatile rimangono permanenti finché non viene effettuata una nuova modifica con i due pulsanti e visualizzata sul display.
 
 Il display e i due pulsanti possono essere un modulo separabile.
 Una volta impostato l'Atmega328P è possibile scollegare il modulo, 
 rendendo più economica la produzione in quanto con un solo modulo si possono impostare altre schede e non essendo lasciati i pulsanti su di esso non permette di variare facilmente i valori per l'utente.
 
-## Funzionamento degli ingressi in FAULT.
+# Funzionamento degli ingressi Control_In.
 
-Ogni volta che viene generato un FAULT, la tensione di uscita viene generata rapidamente.
-Quando la transizione avviene da FAULT a normale, l'uscita della tensione di controllo, avverrà gradualmente attraverso una rampa fino a 3 secondi, 
+Ogni volta che un Control_In viene attivato, la tensione di uscita viene generata rapidamente.
+Quando la transizione sui Control_In avviene da attivato a normale, l'uscita della tensione di controllo avverrà gradualmente attraverso una rampa scendente fino a 3 secondi, 
 producendo così un'uscita di tensione di controllo di tipo Soft Start.
 
-
-## Riferimento incrociato tra Atmega328P e Arduino Uno Rev.3.
+# Riferimento incrociato tra Atmega328P e Arduino Uno Rev.3.
 
 | **Ingressi/Uscite** | **PORT Atmega328P** | **Pin Atmega328P** | **Pin Arduino Uno** |
 |:-------------------:|:-------------------:|:------------------:|:-------------------:|
@@ -110,8 +112,8 @@ producendo così un'uscita di tensione di controllo di tipo Soft Start.
 |      **_PWM_**      |         PD5         |         11         |          5 |
 
 
-## NOTA BENE:
+# NOTA BENE:
 
-A differenza di Six_In_Out fatto con l’ESP32 il quale e stato testato, questo firmware non e stato testato e collaudato ancora.
+Il firmware e stato collaudato su un Arduino Uno con un semplice filtro passa basso RC, andando come previsto.
 La idea finale è di fare un circuito dove inserire un singolo Atmega328P funzionando senza Xtal con oscillatore interno di 8MHz. e un filtro passa basso attivo con un OPAMP per il PWM.
-La programmazione de l’Atmega328P si farà con il Arduino Uno Rev.3 via ICSP per ciò si adopera il Pin /RESET de l’Arduino (vedere circuito Six_In.pdf).
+La programmazione de l’Atmega328P si farà con il Arduino Uno via ICSP per ciò si adopera il Pin /RESET de l’Arduino (vedere circuito Six_In.pdf).
