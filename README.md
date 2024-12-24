@@ -1,4 +1,3 @@
-
 # Six_In
 
 Tensione di uscita controllata da un massimo di sei ingressi digitali.
@@ -63,7 +62,7 @@ Da far notare che nello stato SETTING MODE, si dalla ultima volta che si ha pigi
 Se invece dallo stato NORMAL MODE si preme per due secondi, questa volta però, il tasto UP, 
 il display cambia e mostrerà ora una riga con i valori da 1 a 6 e sotto di essi 
 un cursore che si sposterà con i due tasti (con DOWN verso sinistra e UP verso la destra del display), posizionando il cursore sotto la quantità che si vuole di Control_In ed uscendo dallo stato SETTING MODE con il tasto DOWN, tenendolo premuto per due secondi, le impostazioni della quantità dei Control_In cambierà a la scelta fatta e i valori della tensione di uscita sarà come indicati nella prossima tabella.
-Nuovamente se, sin dalla ultima volta che si ha pigiato su un pulsante passa 60 secondi senza aver fatto il passaggio a lo stato NORMAL MODE tenendo premuto nuovamente il pulsante DOWN per due secondi, il Atemega328P torna in automatico a lo stato NORMAL MODE, questa volta pero non cambierà la scelta della quantità di Control_In, sarà compito del utente a farlo solo pigiando per due secondi il pulsante DOWN, il resto rimane invariato. Cosi è possibile scegliere il numero di input necessari da 1 a 6.
+Nuovamente se, sin dalla ultima volta che si ha pigiato su un pulsante passa 60 secondi senza aver fatto il passaggio a lo stato NORMAL MODE tenendo premuto nuovamente il pulsante DOWN per due secondi, il Atemega328P torna in automatico a lo stato NORMAL MODE, questa volta pero non cambierà la scelta della quantità di Control_In, sarà compito del utente a farlo solo pigiando per due secondi il pulsante DOWN, il resto rimane invariato. Cosi è possibile scegliere il numero di input necessari da 1 a 6. E da far notare che si la scelta e fatta correttamente, esempio: se prima era impostato a sei Control_In e ora e impostato a tre Control_In tenendo premuto per due secondi il tasto DOWN, per far che il micro prenda le sue nuove impostazione si dovrà resettarlo o togliere l’alimentazione, aspettare un po e tornarlo ad accenderlo (fare questo in automatico sarà una miglioria da fare in futuro).
 
 Gli ingressi non necessari verranno scartati dal circuito rimuovendo i ponticelli su di essi (vedere circuito Six_In.pdf). Se invece si decide di restare i ponticelli il comportamento sarà sulla quantità di Control_In attivi sul totale, per controllare la tensione di uscita. 
 Ad esempio: scegliendo 3 Control_In come quantità e mantenendo tutti 6 ponticelli, qualunque de i sei ingressi sarà visto per il programma come attivo e facendo si che il valore di tensione varie accordo a la massima quantità di tre, finché non scenda a due o uno la uscita si fermerà al valore di tensione corrispondente a tre. 
@@ -114,6 +113,12 @@ producendo così un'uscita di tensione di controllo di tipo Soft Start.
 
 # NOTA BENE:
 
-Il firmware e stato collaudato su un Arduino Uno con un semplice filtro passa basso RC, andando come previsto.
-La idea finale è di fare un circuito dove inserire un singolo Atmega328P funzionando senza Xtal con oscillatore interno di 8MHz. e un filtro passa basso attivo con un OPAMP per il PWM.
-La programmazione de l’Atmega328P si farà con il Arduino Uno via ICSP per ciò si adopera il Pin /RESET de l’Arduino (vedere circuito Six_In.pdf).
+Il firmware e stato collaudato su un Arduino Uno con un semplice filtro passa basso RC, andando come previsto. Il PWM generato è da 980Hz approssimativamente.
+
+La idea finale è fatta su un circuito dove e inserito un singolo Atmega328P funzionando senza Xtal con oscillatore interno di 8MHz e un filtro  passa basso attivo con un OPAMP per il PWM.
+
+La programmazione de l’Atmega328P e fatta con il Arduino Uno (come programmatore) via ICSP per ciò si adopera il Pin /RESET de l’Arduino (vedere circuito Six_In.pdf).
+
+Anche quest’ultimo e stato collaudato e funziona tutto bene, Il PWM generato con il oscillatore interno a 8MHz pero si e dimezzato a 440Hz (volendo mantenere la stesa frequenza che con il xtal da 16MHz esterno a 980Hz, sarà una miglioria da fare in futuro).
+
+In riferimento a la uscita di tensione di controllo, se la corrente necessaria e intorno a i 10mA e sufficiente usare una singola alimentazione da 5V e un solo CI LM7332 con due amplificatori interni se invece e necessario 100mA e meglio fare con un buffer come nel circuito Six_In.pdf.
